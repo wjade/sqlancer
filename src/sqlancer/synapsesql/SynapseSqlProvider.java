@@ -115,15 +115,22 @@ public class SynapseSqlProvider extends SQLProviderAdapter<SynapseSqlGlobalState
     }
 
     @Override
-    public SQLConnection createDatabase(SynapseSqlGlobalState globalState) throws SQLException {
-        String url = "jdbc:duckdb:";
+    public SQLConnection createDatabase(SynapseSqlGlobalState globalState) throws SQLException{
+        //String url = "jdbc:sqlserver://jade-121.sql.azuresynapse.net:1433;database=jade121;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.sql.azuresynapse.net;loginTimeout=30;";
+        String url = "jdbc:sqlserver://jade-121.sql.azuresynapse.net:1433;database=jade121";
+        try{
+            Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+        } catch(Exception e) {
+            //throw new IgnoreMeException();
+        }
+
         return new SQLConnection(DriverManager.getConnection(url, globalState.getOptions().getUserName(),
                 globalState.getOptions().getPassword()));
     }
 
     @Override
     public String getDBMSName() {
-        return "duckdb";
+        return "sqlserver";
     }
 
 }

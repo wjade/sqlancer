@@ -82,33 +82,33 @@ public class SynapseSqlSchema extends AbstractSchema<SynapseSqlGlobalState, Syna
             case INT:
                 switch (size) {
                 case 8:
-                    return Randomly.fromOptions("BIGINT", "INT8");
+                    return Randomly.fromOptions("bigint");
                 case 4:
-                    return Randomly.fromOptions("INTEGER", "INT", "INT4", "SIGNED");
+                    return Randomly.fromOptions("int");
                 case 2:
-                    return Randomly.fromOptions("SMALLINT", "INT2");
+                    return Randomly.fromOptions("smallint");
                 case 1:
-                    return Randomly.fromOptions("TINYINT", "INT1");
+                    return Randomly.fromOptions("tinyint");
                 default:
                     throw new AssertionError(size);
                 }
             case VARCHAR:
-                return "VARCHAR";
+                return String.format("varchar(%d)", size);
             case FLOAT:
                 switch (size) {
                 case 8:
-                    return Randomly.fromOptions("DOUBLE");
+                    return Randomly.fromOptions("float");
                 case 4:
-                    return Randomly.fromOptions("REAL", "FLOAT4");
+                    return Randomly.fromOptions("real");
                 default:
                     throw new AssertionError(size);
                 }
             case BOOLEAN:
-                return Randomly.fromOptions("BOOLEAN", "BOOL");
+                return Randomly.fromOptions("bit");
             case TIMESTAMP:
-                return Randomly.fromOptions("TIMESTAMP", "DATETIME");
+                return Randomly.fromOptions("datetime");
             case DATE:
-                return Randomly.fromOptions("DATE");
+                return Randomly.fromOptions("date");
             default:
                 throw new AssertionError(getPrimitiveDataType());
             }
@@ -160,47 +160,41 @@ public class SynapseSqlSchema extends AbstractSchema<SynapseSqlGlobalState, Syna
             return new SynapseSqlCompositeDataType(SynapseSqlDataType.FLOAT, 8);
         }
         switch (typeString) {
-        case "INTEGER":
+        case "int":
             primitiveType = SynapseSqlDataType.INT;
             size = 4;
             break;
-        case "SMALLINT":
+        case "smallint":
             primitiveType = SynapseSqlDataType.INT;
             size = 2;
             break;
-        case "BIGINT":
-        case "HUGEINT": // TODO: 16-bit int
+        case "bigint":
             primitiveType = SynapseSqlDataType.INT;
             size = 8;
             break;
-        case "TINYINT":
+        case "tinyint":
             primitiveType = SynapseSqlDataType.INT;
             size = 1;
             break;
-        case "VARCHAR":
+        case "varchar":
             primitiveType = SynapseSqlDataType.VARCHAR;
             break;
-        case "FLOAT":
+        case "float":
             primitiveType = SynapseSqlDataType.FLOAT;
             size = 4;
             break;
-        case "DOUBLE":
-            primitiveType = SynapseSqlDataType.FLOAT;
-            size = 8;
-            break;
-        case "BOOLEAN":
+        case "bit":
             primitiveType = SynapseSqlDataType.BOOLEAN;
             break;
-        case "DATE":
+        case "date":
             primitiveType = SynapseSqlDataType.DATE;
             break;
-        case "TIMESTAMP":
+        case "datetime":
             primitiveType = SynapseSqlDataType.TIMESTAMP;
             break;
-        case "INTERVAL":
-            throw new IgnoreMeException();
-        // TODO: caused when a view contains a computation like ((TIMESTAMP '1970-01-05 11:26:57')-(TIMESTAMP
-        // '1969-12-29 06:50:27'))
+        case "real":
+            primitiveType = SynapseSqlDataType.FLOAT;
+            break;
         default:
             throw new AssertionError(typeString);
         }
@@ -237,7 +231,7 @@ public class SynapseSqlSchema extends AbstractSchema<SynapseSqlGlobalState, Syna
     private static List<String> getTableNames(SQLConnection con) throws SQLException {
         List<String> tableNames = new ArrayList<>();
         try (Statement s = con.createStatement()) {
-            try (ResultSet rs = s.executeQuery("SELECT * FROM sqlite_master()")) {
+            try (ResultSet rs = s.executeQuery("SELECT * FROM sys.tables")) {
                 while (rs.next()) {
                     tableNames.add(rs.getString("name"));
                 }
@@ -247,24 +241,25 @@ public class SynapseSqlSchema extends AbstractSchema<SynapseSqlGlobalState, Syna
     }
 
     private static List<SynapseSqlColumn> getTableColumns(SQLConnection con, String tableName) throws SQLException {
+        String selectQuery = "select "
+            .concat("c.name as name, types.name as type, c.is_nullable ")
+            .concat("from sys.tables t ")
+            .concat("join sys.all_columns c on t.object_id = c.object_id ")
+            .concat("join sys.types types on c.system_type_id = types.system_type_id ")
+            .concat("where t.name = '%s'");
+
         List<SynapseSqlColumn> columns = new ArrayList<>();
         try (Statement s = con.createStatement()) {
-            try (ResultSet rs = s.executeQuery(String.format("SELECT * FROM pragma_table_info('%s');", tableName))) {
+            try (ResultSet rs = s.executeQuery(String.format(selectQuery, tableName))) {
                 while (rs.next()) {
                     String columnName = rs.getString("name");
                     String dataType = rs.getString("type");
-                    boolean isNullable = rs.getString("notnull").contentEquals("false");
-                    boolean isPrimaryKey = rs.getString("pk").contains("true");
+                    boolean isNullable = rs.getBoolean("is_nullable");
+                    boolean isPrimaryKey = false;
                     SynapseSqlColumn c = new SynapseSqlColumn(columnName, getColumnType(dataType), isPrimaryKey, isNullable);
                     columns.add(c);
                 }
             }
-        }
-        if (columns.stream().noneMatch(c -> c.isPrimaryKey())) {
-            // https://github.com/cwida/duckdb/issues/589
-            // https://github.com/cwida/duckdb/issues/588
-            // TODO: implement an option to enable/disable rowids
-            columns.add(new SynapseSqlColumn("rowid", new SynapseSqlCompositeDataType(SynapseSqlDataType.INT, 4), false, false));
         }
         return columns;
     }

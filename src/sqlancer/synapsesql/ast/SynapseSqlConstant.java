@@ -14,7 +14,7 @@ public class SynapseSqlConstant implements Node<SynapseSqlExpression> {
 
         @Override
         public String toString() {
-            return "NULL";
+            return null;
         }
 
     }
