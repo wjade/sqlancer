@@ -52,11 +52,6 @@ public class SynapseSqlConstant implements Node<SynapseSqlExpression> {
 
         @Override
         public String toString() {
-            if (value == Double.POSITIVE_INFINITY) {
-                return "'+Inf'";
-            } else if (value == Double.NEGATIVE_INFINITY) {
-                return "'-Inf'";
-            }
             return String.valueOf(value);
         }
 
@@ -86,7 +81,14 @@ public class SynapseSqlConstant implements Node<SynapseSqlExpression> {
         private final String value;
 
         public SynapseSqlBitConstant(long value) {
-            this.value = Long.toBinaryString(value);
+            if(0 == value)
+            {
+                this.value = "0";
+            }
+            else
+            {
+                this.value = "1";
+            }
         }
 
         public String getValue() {
@@ -95,7 +97,7 @@ public class SynapseSqlConstant implements Node<SynapseSqlExpression> {
 
         @Override
         public String toString() {
-            return "B'" + value + "'";
+            return value;
         }
 
     }
@@ -116,9 +118,8 @@ public class SynapseSqlConstant implements Node<SynapseSqlExpression> {
 
         @Override
         public String toString() {
-            return String.format("DATE '%s'", textRepr);
+            return String.format("'%s'", textRepr);
         }
-
     }
 
     public static class SynapseSqlTimestampConstant extends SynapseSqlConstant {
@@ -137,9 +138,8 @@ public class SynapseSqlConstant implements Node<SynapseSqlExpression> {
 
         @Override
         public String toString() {
-            return String.format("TIMESTAMP '%s'", textRepr);
+            return String.format("'%s'", textRepr);
         }
-
     }
 
     public static class SynapseSqlBooleanConstant extends SynapseSqlConstant {
@@ -156,7 +156,12 @@ public class SynapseSqlConstant implements Node<SynapseSqlExpression> {
 
         @Override
         public String toString() {
-            return String.valueOf(value);
+            if(value) {
+                return "1";
+            }
+            else {
+                return "0";
+            }
         }
 
     }

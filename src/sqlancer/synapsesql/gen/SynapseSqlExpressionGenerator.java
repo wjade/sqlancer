@@ -98,7 +98,7 @@ public final class SynapseSqlExpressionGenerator extends UntypedExpressionGenera
             return new NewBinaryOperatorNode<SynapseSqlExpression>(generateExpression(depth + 1),
                     generateExpression(depth + 1), SynapseSqlBinaryArithmeticOperator.getRandom());
         case CAST:
-            return new SynapseSqlCastOperation(generateExpression(depth + 1), SynapseSqlCompositeDataType.getRandom());
+            return new SynapseSqlCastOperation(generateExpression(depth + 1), SynapseSqlCompositeDataType.getRandom(this.globalState.getRandomly()));
         case FUNC:
             DBFunction func = DBFunction.getRandom();
             return new NewFunctionNode<SynapseSqlExpression, DBFunction>(generateExpressions(func.getNrArgs()), func);

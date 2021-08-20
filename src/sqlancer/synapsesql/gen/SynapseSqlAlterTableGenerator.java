@@ -34,13 +34,13 @@ public final class SynapseSqlAlterTableGenerator {
             String columnName = table.getFreeColumnName();
             sb.append(columnName);
             sb.append(" ");
-            sb.append(SynapseSqlCompositeDataType.getRandom().toString());
+            sb.append(SynapseSqlCompositeDataType.getRandom(globalState.getRandomly()).toString());
             break;
         case ALTER_COLUMN:
             sb.append("ALTER COLUMN ");
             sb.append(table.getRandomColumn().getName());
             sb.append(" SET DATA TYPE ");
-            sb.append(SynapseSqlCompositeDataType.getRandom().toString());
+            sb.append(SynapseSqlCompositeDataType.getRandom(globalState.getRandomly()).toString());
             if (Randomly.getBoolean()) {
                 sb.append(" USING ");
                 SynapseSqlErrors.addExpressionErrors(errors);

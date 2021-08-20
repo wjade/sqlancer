@@ -53,7 +53,7 @@ public class SynapseSqlSchema extends AbstractSchema<SynapseSqlGlobalState, Syna
             return size;
         }
 
-        public static SynapseSqlCompositeDataType getRandom() {
+        public static SynapseSqlCompositeDataType getRandom(Randomly r) {
             SynapseSqlDataType type = SynapseSqlDataType.getRandom();
             int size = -1;
             switch (type) {
@@ -64,10 +64,15 @@ public class SynapseSqlSchema extends AbstractSchema<SynapseSqlGlobalState, Syna
                 size = Randomly.fromOptions(4, 8);
                 break;
             case BOOLEAN:
-            case VARCHAR:
             case DATE:
             case TIMESTAMP:
                 size = 0;
+                break;
+            case VARCHAR:
+                size = (int)r.getPositiveInteger();
+                if(size >= 8000){
+                    size = 8000;
+                }
                 break;
             default:
                 throw new AssertionError(type);

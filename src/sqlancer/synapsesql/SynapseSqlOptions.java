@@ -25,13 +25,13 @@ import sqlancer.synapsesql.test.SynapseSqlQueryPartitioningWhereTester;
 public class SynapseSqlOptions implements DBMSSpecificOptions<SynapseSqlOracleFactory> {
 
     @Parameter(names = "--test-collate", arity = 1)
-    public boolean testCollate = true;
+    public boolean testCollate = false;
 
     @Parameter(names = "--test-check", description = "Allow generating CHECK constraints in tables", arity = 1)
-    public boolean testCheckConstraints = true;
+    public boolean testCheckConstraints = false;
 
     @Parameter(names = "--test-default-values", description = "Allow generating DEFAULT values in tables", arity = 1)
-    public boolean testDefaultValues = true;
+    public boolean testDefaultValues = false;
 
     @Parameter(names = "--test-not-null", description = "Allow generating NOT NULL constraints in tables", arity = 1)
     public boolean testNotNullConstraints = true;
@@ -76,10 +76,10 @@ public class SynapseSqlOptions implements DBMSSpecificOptions<SynapseSqlOracleFa
     public boolean testBinaryComparisons = true;
 
     @Parameter(names = "--test-indexes", description = "Allow explicit (i.e. CREATE INDEX) and implicit (i.e., UNIQUE and PRIMARY KEY) indexes", arity = 1)
-    public boolean testIndexes = true;
+    public boolean testIndexes = false;
 
     @Parameter(names = "--test-rowid", description = "Test tables' rowid columns", arity = 1)
-    public boolean testRowid = true;
+    public boolean testRowid = false;
 
     @Parameter(names = "--max-num-views", description = "The maximum number of views that can be generated for a database", arity = 1)
     public int maxNumViews = 1;

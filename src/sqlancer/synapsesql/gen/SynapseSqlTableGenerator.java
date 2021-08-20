@@ -26,7 +26,7 @@ public class SynapseSqlTableGenerator {
         sb.append("CREATE TABLE ");
         sb.append(tableName);
         sb.append("(");
-        List<SynapseSqlColumn> columns = getNewColumns();
+        List<SynapseSqlColumn> columns = getNewColumns(globalState.getRandomly());
         UntypedExpressionGenerator<Node<SynapseSqlExpression>, SynapseSqlColumn> gen = new SynapseSqlExpressionGenerator(
                 globalState).setColumns(columns);
         for (int i = 0; i < columns.size(); i++) {
@@ -77,11 +77,11 @@ public class SynapseSqlTableGenerator {
         return Randomly.fromOptions("NOCASE", "NOACCENT", "NOACCENT.NOCASE", "C", "POSIX");
     }
 
-    private static List<SynapseSqlColumn> getNewColumns() {
+    private static List<SynapseSqlColumn> getNewColumns(Randomly r) {
         List<SynapseSqlColumn> columns = new ArrayList<>();
         for (int i = 0; i < Randomly.smallNumber() + 1; i++) {
             String columnName = String.format("c%d", i);
-            SynapseSqlCompositeDataType columnType = SynapseSqlCompositeDataType.getRandom();
+            SynapseSqlCompositeDataType columnType = SynapseSqlCompositeDataType.getRandom(r);
             columns.add(new SynapseSqlColumn(columnName, columnType, false, false));
         }
         return columns;
