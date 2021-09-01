@@ -8,6 +8,7 @@ public final class SynapseSqlErrors {
     }
 
     public static void addExpressionErrors(ExpectedErrors errors) {
+        errors.add("Parse error at line");
         errors.add("with non-constant precision is not supported");
         errors.add("Like pattern must not end with escape character");
         errors.add("Could not convert string");

@@ -2,7 +2,9 @@ package sqlancer.synapsesql.gen;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import sqlancer.IgnoreMeException;
 import sqlancer.Randomly;
@@ -45,10 +47,34 @@ public final class SynapseSqlExpressionGenerator extends UntypedExpressionGenera
         return generateExpression(depth, SynapseSqlDataType.BOOLEAN);
     }
 
-    private Node<SynapseSqlExpression> generateExpression(int depth, SynapseSqlDataType type) {
-        if (depth >= globalState.getOptions().getMaxExpressionDepth() || Randomly.getBoolean()) {
-            return generateLeafNode();
+    final List<SynapseSqlColumn> filterColumns(SynapseSqlDataType type) {
+        if (columns == null) {
+            return Collections.emptyList();
+        } else {
+            return columns.stream().filter(c -> c.getType().getPrimitiveDataType() == type).collect(Collectors.toList());
         }
+    }
+
+    private Node<SynapseSqlExpression> generateLeafNode(SynapseSqlDataType type){
+        List<SynapseSqlColumn> filteredColumns = filterColumns(type);
+
+        if (Randomly.getBoolean() && !filteredColumns.isEmpty()) {
+            SynapseSqlColumn column = Randomly.fromList(filteredColumns);
+            return new ColumnReferenceNode<SynapseSqlExpression, SynapseSqlColumn>(column);
+        } else {
+            return generateConstant(new SynapseSqlCompositeDataType(type, Randomly.smallNumber()));
+        }
+    }
+
+    private Node<SynapseSqlExpression> generateExpression(int depth, SynapseSqlDataType type) {
+        if(type != SynapseSqlDataType.BOOLEAN){
+            return generateConstant(new SynapseSqlCompositeDataType(type, Randomly.smallNumber()));
+        }
+
+        if (depth >= globalState.getOptions().getMaxExpressionDepth() || Randomly.getBoolean()) {
+            return generateLeafNode(type);
+        }
+
         if (allowAggregates && Randomly.getBoolean()) {
             SynapseSqlAggregateFunction aggregate = SynapseSqlAggregateFunction.getRandom();
             allowAggregates = false;
@@ -58,6 +84,7 @@ public final class SynapseSqlExpressionGenerator extends UntypedExpressionGenera
         if (!globalState.getDbmsSpecificOptions().testCollate) {
             possibleOptions.remove(Expression.COLLATE);
             possibleOptions.remove(Expression.LIKE_ESCAPE);
+            possibleOptions.remove(Expression.BINARY_ARITHMETIC);
         }
         if (!globalState.getDbmsSpecificOptions().testFunctions) {
             possibleOptions.remove(Expression.FUNC);
@@ -81,49 +108,72 @@ public final class SynapseSqlExpressionGenerator extends UntypedExpressionGenera
             possibleOptions.remove(Expression.BINARY_LOGICAL);
         }
         Expression expr = Randomly.fromList(possibleOptions);
+        SynapseSqlDataType randomType = SynapseSqlDataType.getRandom();
+
         switch (expr) {
         case COLLATE:
-            return new NewUnaryPostfixOperatorNode<SynapseSqlExpression>(generateExpression(depth + 1),
+            return new NewUnaryPostfixOperatorNode<SynapseSqlExpression>(generateExpression(depth + 1, randomType),
                     SynapseSqlCollate.getRandom());
         case UNARY_PREFIX:
-            return new NewUnaryPrefixOperatorNode<SynapseSqlExpression>(generateExpression(depth + 1),
+            return new NewUnaryPrefixOperatorNode<SynapseSqlExpression>(generateExpression(depth + 1, randomType),
                     SynapseSqlUnaryPrefixOperator.getRandom());
         case UNARY_POSTFIX:
-            return new NewUnaryPostfixOperatorNode<SynapseSqlExpression>(generateExpression(depth + 1),
+            return new NewUnaryPostfixOperatorNode<SynapseSqlExpression>(generateExpression(depth + 1, randomType),
                     SynapseSqlUnaryPostfixOperator.getRandom());
         case BINARY_COMPARISON:
             Operator op = SynapseSqlBinaryComparisonOperator.getRandom();
-            return new NewBinaryOperatorNode<SynapseSqlExpression>(generateExpression(depth + 1),
-                    generateExpression(depth + 1), op);
+            return new NewBinaryOperatorNode<SynapseSqlExpression>(generateExpression(depth + 1, randomType),
+                    generateExpression(depth + 1, randomType), op);
         case BINARY_LOGICAL:
             op = SynapseSqlBinaryLogicalOperator.getRandom();
-            return new NewBinaryOperatorNode<SynapseSqlExpression>(generateExpression(depth + 1),
-                    generateExpression(depth + 1), op);
+            return new NewBinaryOperatorNode<SynapseSqlExpression>(generateExpression(depth + 1, SynapseSqlDataType.BOOLEAN),
+                    generateExpression(depth + 1, SynapseSqlDataType.BOOLEAN), op);
         case BINARY_ARITHMETIC:
-            return new NewBinaryOperatorNode<SynapseSqlExpression>(generateExpression(depth + 1),
-                    generateExpression(depth + 1), SynapseSqlBinaryArithmeticOperator.getRandom());
+            return new NewBinaryOperatorNode<SynapseSqlExpression>(generateExpression(depth + 1, randomType),
+                   generateExpression(depth + 1, randomType), SynapseSqlBinaryArithmeticOperator.getRandom());
         case CAST:
             return new SynapseSqlCastOperation(generateExpression(depth + 1), SynapseSqlCompositeDataType.getRandom(this.globalState.getRandomly()));
         case FUNC:
             DBFunction func = DBFunction.getRandom();
-            return new NewFunctionNode<SynapseSqlExpression, DBFunction>(generateExpressions(func.getNrArgs()), func);
+            return new NewFunctionNode<SynapseSqlExpression, DBFunction>(generateExpressions(func.getNrArgs(), randomType), func);
         case BETWEEN:
-            return new NewBetweenOperatorNode<SynapseSqlExpression>(generateExpression(depth + 1),
-                    generateExpression(depth + 1), generateExpression(depth + 1), Randomly.getBoolean());
+            return new NewBetweenOperatorNode<SynapseSqlExpression>(generateExpression(depth + 1, randomType),
+                    generateExpression(depth + 1, randomType), generateExpression(depth + 1, randomType), Randomly.getBoolean());
         case IN:
-            return new NewInOperatorNode<SynapseSqlExpression>(generateExpression(depth + 1),
-                    generateExpressions(depth + 1, Randomly.smallNumber() + 1), Randomly.getBoolean());
+            return new NewInOperatorNode<SynapseSqlExpression>(generateExpression(depth + 1, randomType),
+                    generateExpressions(depth + 1, Randomly.smallNumber() + 1, randomType), Randomly.getBoolean());
         case CASE:
             int nr = Randomly.smallNumber() + 1;
-            return new NewCaseOperatorNode<SynapseSqlExpression>(generateExpression(depth + 1),
-                    generateExpressions(depth + 1, nr), generateExpressions(depth + 1, nr),
-                    generateExpression(depth + 1));
+            return new NewCaseOperatorNode<SynapseSqlExpression>(generateExpression(depth + 1, randomType),
+                    generateExpressions(depth + 1, nr, SynapseSqlDataType.BOOLEAN), generateExpressions(depth + 1, nr, randomType),
+                    generateExpression(depth + 1, randomType));
         case LIKE_ESCAPE:
             return new NewTernaryNode<SynapseSqlExpression>(generateExpression(depth + 1), generateExpression(depth + 1),
                     generateExpression(depth + 1), "LIKE", "ESCAPE");
         default:
             throw new AssertionError();
         }
+    }
+
+    public List<Node<SynapseSqlExpression>> generateExpressions(int nr, SynapseSqlDataType type) {
+        List<Node<SynapseSqlExpression>> expressions = new ArrayList<>();
+        for (int i = 0; i < nr; i++) {
+            expressions.add(generateExpression(0, type));
+        }
+        return expressions;
+    }
+
+    public List<Node<SynapseSqlExpression>> generateExpressions(int depth, int nr, SynapseSqlDataType type) {
+        List<Node<SynapseSqlExpression>> expressions = new ArrayList<>();
+        for (int i = 0; i < nr; i++) {
+            expressions.add(generateExpression(depth, type));
+        }
+        return expressions;
+    }
+
+    // override this class to also generate ASC, DESC
+    public List<Node<SynapseSqlExpression>> generateOrderBys(SynapseSqlDataType type) {
+        return generateExpressions(Randomly.smallNumber() + 1);
     }
 
     @Override
@@ -166,7 +216,11 @@ public final class SynapseSqlExpressionGenerator extends UntypedExpressionGenera
             if (!globalState.getDbmsSpecificOptions().testBooleanConstants) {
                 throw new IgnoreMeException();
             }
-            return SynapseSqlConstant.createBooleanConstant(Randomly.getBoolean());
+
+            return new NewBinaryOperatorNode<SynapseSqlExpression>(
+                SynapseSqlConstant.createBooleanConstant(Randomly.getBoolean()),
+                SynapseSqlConstant.createBooleanConstant(true),
+                SynapseSqlBinaryComparisonOperator.EQUALS);
         case FLOAT:
             if (!globalState.getDbmsSpecificOptions().testFloatConstants) {
                 throw new IgnoreMeException();

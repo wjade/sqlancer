@@ -194,7 +194,8 @@ public class SynapseSqlSchema extends AbstractSchema<SynapseSqlGlobalState, Syna
             size = 4;
             break;
         case "bit":
-            primitiveType = SynapseSqlDataType.BOOLEAN;
+            primitiveType = SynapseSqlDataType.INT;
+            size = 1;
             break;
         case "date":
             primitiveType = SynapseSqlDataType.DATE;
