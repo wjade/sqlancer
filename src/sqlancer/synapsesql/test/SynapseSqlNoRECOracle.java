@@ -11,6 +11,7 @@ import sqlancer.IgnoreMeException;
 import sqlancer.Randomly;
 import sqlancer.SQLConnection;
 import sqlancer.common.ast.newast.ColumnReferenceNode;
+import sqlancer.common.ast.newast.NewCaseOperatorNode;
 import sqlancer.common.ast.newast.NewPostfixTextNode;
 import sqlancer.common.ast.newast.Node;
 import sqlancer.common.ast.newast.TableReferenceNode;
@@ -27,6 +28,7 @@ import sqlancer.synapsesql.SynapseSqlSchema.SynapseSqlDataType;
 import sqlancer.synapsesql.SynapseSqlSchema.SynapseSqlTable;
 import sqlancer.synapsesql.SynapseSqlSchema.SynapseSqlTables;
 import sqlancer.synapsesql.SynapseSqlToStringVisitor;
+import sqlancer.synapsesql.ast.SynapseSqlConstant;
 import sqlancer.synapsesql.ast.SynapseSqlExpression;
 import sqlancer.synapsesql.ast.SynapseSqlJoin;
 import sqlancer.synapsesql.ast.SynapseSqlSelect;
@@ -71,16 +73,24 @@ public class SynapseSqlNoRECOracle extends NoRECBase<SynapseSqlGlobalState> impl
         // select.setGroupByClause(groupBys);
         // SynapseSqlExpression isTrue = SynapseSqlPostfixOperation.create(randomWhereCondition,
         // PostfixOperator.IS_TRUE);
-        Node<SynapseSqlExpression> asText = new NewPostfixTextNode<>(new SynapseSqlCastOperation(
-                new NewPostfixTextNode<SynapseSqlExpression>(randomWhereCondition,
-                        " IS NOT NULL AND " + SynapseSqlToStringVisitor.asString(randomWhereCondition)),
-                new SynapseSqlCompositeDataType(SynapseSqlDataType.INT, 8)), "as count");
-        select.setFetchColumns(Arrays.asList(asText));
+        Node<SynapseSqlExpression> caseExpression = new NewCaseOperatorNode<SynapseSqlExpression>(
+            null, 
+            List.of(randomWhereCondition), 
+            List.of(SynapseSqlConstant.createBooleanConstant(true)), 
+            SynapseSqlConstant.createBooleanConstant(false));
+
+        Node<SynapseSqlExpression> asCnt = new NewPostfixTextNode<>(caseExpression, " as cnt");
+
+        //Node<SynapseSqlExpression> asText = new NewPostfixTextNode<>(new SynapseSqlCastOperation(
+        //        new NewPostfixTextNode<SynapseSqlExpression>(randomWhereCondition,
+        //               " IS NOT NULL AND " + SynapseSqlToStringVisitor.asString(randomWhereCondition)),
+        //        new SynapseSqlCompositeDataType(SynapseSqlDataType.INT, 8)), "as count");
+        select.setFetchColumns(Arrays.asList(asCnt));
         select.setFromList(tableList);
         // select.setSelectType(SelectType.ALL);
         select.setJoinList(joins);
         int secondCount = 0;
-        unoptimizedQueryString = "SELECT SUM(count) FROM (" + SynapseSqlToStringVisitor.asString(select) + ") as res";
+        unoptimizedQueryString = "SELECT SUM(cnt) FROM (" + SynapseSqlToStringVisitor.asString(select) + ") as res";
         errors.add("canceling statement due to statement timeout");
         SQLQueryAdapter q = new SQLQueryAdapter(unoptimizedQueryString, errors);
         SQLancerResultSet rs;

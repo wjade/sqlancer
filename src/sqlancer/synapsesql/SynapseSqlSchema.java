@@ -73,6 +73,11 @@ public class SynapseSqlSchema extends AbstractSchema<SynapseSqlGlobalState, Syna
                 if(size >= 8000){
                     size = 8000;
                 }
+
+                if(size <= 0)
+                {
+                    size = 100;
+                }
                 break;
             default:
                 throw new AssertionError(type);
@@ -155,7 +160,7 @@ public class SynapseSqlSchema extends AbstractSchema<SynapseSqlGlobalState, Syna
     }
 
     public SynapseSqlTables getRandomTableNonEmptyTables() {
-        return new SynapseSqlTables(Randomly.nonEmptySubset(getDatabaseTables()));
+        return new SynapseSqlTables(Randomly.nonEmptySubset(getDatabaseTables(), 2));
     }
 
     private static SynapseSqlCompositeDataType getColumnType(String typeString) {

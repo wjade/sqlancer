@@ -3,7 +3,6 @@ package sqlancer.synapsesql.gen;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import sqlancer.Randomly;
 import sqlancer.common.gen.AbstractInsertGenerator;
 import sqlancer.common.query.ExpectedErrors;
 import sqlancer.common.query.SQLQueryAdapter;
@@ -17,9 +16,11 @@ public class SynapseSqlInsertGenerator extends AbstractInsertGenerator<SynapseSq
 
     private final SynapseSqlGlobalState globalState;
     private final ExpectedErrors errors = new ExpectedErrors();
+    private final SynapseSqlExpressionGenerator expressionGenerator;
 
     public SynapseSqlInsertGenerator(SynapseSqlGlobalState globalState) {
         this.globalState = globalState;
+        this.expressionGenerator = new SynapseSqlExpressionGenerator(globalState);
     }
 
     public static SQLQueryAdapter getQuery(SynapseSqlGlobalState globalState) {
@@ -29,7 +30,8 @@ public class SynapseSqlInsertGenerator extends AbstractInsertGenerator<SynapseSq
     private SQLQueryAdapter generate() {
         sb.append("INSERT INTO ");
         SynapseSqlTable table = globalState.getSchema().getRandomTable(t -> !t.isView());
-        List<SynapseSqlColumn> columns = table.getRandomNonEmptyColumnSubset();
+        //List<SynapseSqlColumn> columns = table.getRandomNonEmptyColumnSubset();
+        List<SynapseSqlColumn> columns = table.getColumns();
         sb.append(table.getName());
         sb.append("(");
         sb.append(columns.stream().map(c -> c.getName()).collect(Collectors.joining(", ")));
@@ -42,12 +44,7 @@ public class SynapseSqlInsertGenerator extends AbstractInsertGenerator<SynapseSq
 
     @Override
     protected void insertValue(SynapseSqlColumn tiDBColumn) {
-        // TODO: select a more meaningful value
-        if (Randomly.getBooleanWithRatherLowProbability()) {
-            sb.append("DEFAULT");
-        } else {
-            sb.append(SynapseSqlToStringVisitor.asString(new SynapseSqlExpressionGenerator(globalState).generateConstant()));
-        }
+        sb.append(SynapseSqlToStringVisitor.asString(expressionGenerator.generateConstant(tiDBColumn.getType())));
     }
 
 }

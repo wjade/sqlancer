@@ -37,19 +37,19 @@ public class SynapseSqlOptions implements DBMSSpecificOptions<SynapseSqlOracleFa
     public boolean testNotNullConstraints = true;
 
     @Parameter(names = "--test-functions", description = "Allow generating functions in expressions", arity = 1)
-    public boolean testFunctions = true;
+    public boolean testFunctions = false;
 
     @Parameter(names = "--test-casts", description = "Allow generating casts in expressions", arity = 1)
-    public boolean testCasts = true;
+    public boolean testCasts = false;
 
     @Parameter(names = "--test-between", description = "Allow generating the BETWEEN operator in expressions", arity = 1)
-    public boolean testBetween = true;
+    public boolean testBetween = false;
 
     @Parameter(names = "--test-in", description = "Allow generating the IN operator in expressions", arity = 1)
-    public boolean testIn = true;
+    public boolean testIn = false;
 
     @Parameter(names = "--test-case", description = "Allow generating the CASE operator in expressions", arity = 1)
-    public boolean testCase = true;
+    public boolean testCase = false;
 
     @Parameter(names = "--test-binary-logicals", description = "Allow generating AND and OR in expressions", arity = 1)
     public boolean testBinaryLogicals = true;
@@ -82,7 +82,7 @@ public class SynapseSqlOptions implements DBMSSpecificOptions<SynapseSqlOracleFa
     public boolean testRowid = false;
 
     @Parameter(names = "--max-num-views", description = "The maximum number of views that can be generated for a database", arity = 1)
-    public int maxNumViews = 1;
+    public int maxNumViews = 0;
 
     @Parameter(names = "--max-num-deletes", description = "The maximum number of DELETE statements that are issued for a database", arity = 1)
     public int maxNumDeletes = 1;
@@ -138,11 +138,12 @@ public class SynapseSqlOptions implements DBMSSpecificOptions<SynapseSqlOracleFa
             @Override
             public TestOracle create(SynapseSqlGlobalState globalState) throws SQLException {
                 List<TestOracle> oracles = new ArrayList<>();
-                oracles.add(new SynapseSqlQueryPartitioningWhereTester(globalState));
-                oracles.add(new SynapseSqlQueryPartitioningHavingTester(globalState));
-                oracles.add(new SynapseSqlQueryPartitioningAggregateTester(globalState));
-                oracles.add(new SynapseSqlQueryPartitioningDistinctTester(globalState));
-                oracles.add(new SynapseSqlQueryPartitioningGroupByTester(globalState));
+                //oracles.add(new SynapseSqlQueryPartitioningWhereTester(globalState));
+                //oracles.add(new SynapseSqlQueryPartitioningHavingTester(globalState));
+                //oracles.add(new SynapseSqlQueryPartitioningAggregateTester(globalState));
+                //oracles.add(new SynapseSqlQueryPartitioningDistinctTester(globalState));
+                //oracles.add(new SynapseSqlQueryPartitioningGroupByTester(globalState));
+                oracles.add(new SynapseSqlNoRECOracle(globalState));
                 return new CompositeTestOracle(oracles, globalState);
             }
         };

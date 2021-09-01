@@ -72,7 +72,9 @@ public abstract class NewToStringVisitor<E> {
 
     public void visit(NewCaseOperatorNode<E> op) {
         sb.append("(CASE ");
-        visit(op.getSwitchCondition());
+        if(null != op.getSwitchCondition()) {
+            visit(op.getSwitchCondition());
+        }
         for (int i = 0; i < op.getConditions().size(); i++) {
             sb.append(" WHEN ");
             visit(op.getConditions().get(i));

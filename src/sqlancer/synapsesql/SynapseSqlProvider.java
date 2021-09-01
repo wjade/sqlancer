@@ -70,15 +70,17 @@ public class SynapseSqlProvider extends SQLProviderAdapter<SynapseSqlGlobalState
             }
             // fall through
         case UPDATE:
-            return r.getInteger(0, globalState.getDbmsSpecificOptions().maxNumUpdates + 1);
+            return 0;
         case VACUUM: // seems to be ignored
         case ANALYZE: // seems to be ignored
+            return 0;
         case EXPLAIN:
-            return r.getInteger(0, 2);
+            //return r.getInteger(0, 2);
         case DELETE:
-            return r.getInteger(0, globalState.getDbmsSpecificOptions().maxNumDeletes + 1);
+            //return r.getInteger(0, globalState.getDbmsSpecificOptions().maxNumDeletes + 1);
         case CREATE_VIEW:
-            return r.getInteger(0, globalState.getDbmsSpecificOptions().maxNumViews + 1);
+            //return r.getInteger(0, globalState.getDbmsSpecificOptions().maxNumViews + 1);
+            return 0;
         default:
             throw new AssertionError(a);
         }
@@ -98,8 +100,9 @@ public class SynapseSqlProvider extends SQLProviderAdapter<SynapseSqlGlobalState
         for (int i = 0; i < Randomly.fromOptions(1, 2); i++) {
             boolean success;
             do {
-                SQLQueryAdapter qt = new SynapseSqlTableGenerator().getQuery(globalState);
-                success = globalState.executeStatement(qt);
+                //SQLQueryAdapter qt = new SynapseSqlTableGenerator().getQuery(globalState);
+                //success = globalState.executeStatement(qt);
+                success = true;
             } while (!success);
         }
         if (globalState.getSchema().getDatabaseTables().isEmpty()) {
@@ -117,7 +120,7 @@ public class SynapseSqlProvider extends SQLProviderAdapter<SynapseSqlGlobalState
     @Override
     public SQLConnection createDatabase(SynapseSqlGlobalState globalState) throws SQLException{
         //String url = "jdbc:sqlserver://jade-121.sql.azuresynapse.net:1433;database=jade121;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.sql.azuresynapse.net;loginTimeout=30;";
-        String url = "jdbc:sqlserver://jade-121.sql.azuresynapse.net:1433;database=jade121";
+        String url = "jdbc:sqlserver://sqlancer2.sql.azuresynapse.net:1433;database=sqlancer2";
         try{
             Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
         } catch(Exception e) {

@@ -42,6 +42,10 @@ public final class SynapseSqlExpressionGenerator extends UntypedExpressionGenera
 
     @Override
     protected Node<SynapseSqlExpression> generateExpression(int depth) {
+        return generateExpression(depth, SynapseSqlDataType.BOOLEAN);
+    }
+
+    private Node<SynapseSqlExpression> generateExpression(int depth, SynapseSqlDataType type) {
         if (depth >= globalState.getOptions().getMaxExpressionDepth() || Randomly.getBoolean()) {
             return generateLeafNode();
         }
@@ -53,6 +57,7 @@ public final class SynapseSqlExpressionGenerator extends UntypedExpressionGenera
         List<Expression> possibleOptions = new ArrayList<>(Arrays.asList(Expression.values()));
         if (!globalState.getDbmsSpecificOptions().testCollate) {
             possibleOptions.remove(Expression.COLLATE);
+            possibleOptions.remove(Expression.LIKE_ESCAPE);
         }
         if (!globalState.getDbmsSpecificOptions().testFunctions) {
             possibleOptions.remove(Expression.FUNC);
@@ -127,18 +132,21 @@ public final class SynapseSqlExpressionGenerator extends UntypedExpressionGenera
         return new ColumnReferenceNode<SynapseSqlExpression, SynapseSqlColumn>(column);
     }
 
-    @Override
-    public Node<SynapseSqlExpression> generateConstant() {
-        if (Randomly.getBooleanWithSmallProbability()) {
-            return SynapseSqlConstant.createNullConstant();
-        }
-        SynapseSqlDataType type = SynapseSqlDataType.getRandom();
+    public Node<SynapseSqlExpression> generateConstant(SynapseSqlCompositeDataType compositeType){
+
+        SynapseSqlDataType type = compositeType.getPrimitiveDataType();
         switch (type) {
         case INT:
             if (!globalState.getDbmsSpecificOptions().testIntConstants) {
                 throw new IgnoreMeException();
             }
-            return SynapseSqlConstant.createIntConstant(globalState.getRandomly().getInteger());
+
+            int mask = 1;
+            for(int i = 1; i<compositeType.getSize(); i++) {
+                mask = mask << 1;
+                mask = mask | 1;
+            }
+            return SynapseSqlConstant.createIntConstant(globalState.getRandomly().getInteger() & mask);
         case DATE:
             if (!globalState.getDbmsSpecificOptions().testDateConstants) {
                 throw new IgnoreMeException();
@@ -167,6 +175,15 @@ public final class SynapseSqlExpressionGenerator extends UntypedExpressionGenera
         default:
             throw new AssertionError();
         }
+    }
+
+    @Override
+    public Node<SynapseSqlExpression> generateConstant() {
+        if (Randomly.getBooleanWithSmallProbability()) {
+            return SynapseSqlConstant.createNullConstant();
+        }
+        SynapseSqlCompositeDataType type = SynapseSqlCompositeDataType.getRandom(globalState.getRandomly());
+        return generateConstant(type);
     }
 
     @Override
@@ -402,8 +419,9 @@ public final class SynapseSqlExpressionGenerator extends UntypedExpressionGenera
     public enum SynapseSqlBinaryComparisonOperator implements Operator {
 
         EQUALS("="), GREATER(">"), GREATER_EQUALS(">="), SMALLER("<"), SMALLER_EQUALS("<="), NOT_EQUALS("!="),
-        LIKE("LIKE"), NOT_LIKE("NOT LIKE"), SIMILAR_TO("SIMILAR TO"), NOT_SIMILAR_TO("NOT SIMILAR TO"),
-        REGEX_POSIX("~"), REGEX_POSIT_NOT("!~");
+        LIKE("LIKE"), NOT_LIKE("NOT LIKE");
+        //SIMILAR_TO("SIMILAR TO"), NOT_SIMILAR_TO("NOT SIMILAR TO"),
+        //REGEX_POSIX("~"), REGEX_POSIT_NOT("!~");
 
         private String textRepr;
 
